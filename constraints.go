@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -56,11 +55,11 @@ func NewConstraint(c string) (*Constraints, error) {
 	hasPre := make([]bool, lenors)
 	for k, v := range ors {
 		// Validate the segment
-		if !validConstraintRegex.MatchString(v) {
+		if !validConstraintRegexOnce().MatchString(v) {
 			return nil, fmt.Errorf("improper constraint: %q", v)
 		}
 
-		cs := findConstraintRegex.FindAllString(v, -1)
+		cs := findConstraintRegexOnce().FindAllString(v, -1)
 		if cs == nil {
 			cs = append(cs, v)
 		}
@@ -206,19 +205,19 @@ var constraintOps = map[string]cfunc{
 
 const ops = `=||!=|>|<|>=|=>|<=|=<|~|~>|\^`
 
-var constraintRegex = regexp.MustCompile(`^\s*(` + ops + `)\s*(` + cvRegex + `)\s*$`)
+var constraintRegexOnce = mustCompileRegexpOnce(`^\s*(` + ops + `)\s*(` + cvRegex + `)\s*$`)
 
-var constraintRangeRegex = regexp.MustCompile(`\s*(` + cvRegex + `)\s+-\s+(` + cvRegex + `)\s*`)
+var constraintRangeRegexOnce = mustCompileRegexpOnce(`\s*(` + cvRegex + `)\s+-\s+(` + cvRegex + `)\s*`)
 
 // Used to find individual constraints within a multi-constraint string
-var findConstraintRegex = regexp.MustCompile(`(` + ops + `)\s*(` + cvRegex + `)`)
+var findConstraintRegexOnce = mustCompileRegexpOnce(`(` + ops + `)\s*(` + cvRegex + `)`)
 
 // Used to validate an segment of ANDs is valid
 //
 // The first time a constraint shows up will look slightly different from
 // future times it shows up due to a leading space or comma in a given
 // string.
-var validConstraintRegex = regexp.MustCompile(`^(\s*(` + ops + `)\s*(` + cvRegex + `)\s*)((?:\s+|,\s*)(` + ops + `)\s*(` + cvRegex + `)\s*)*$`)
+var validConstraintRegexOnce = mustCompileRegexpOnce(`^(\s*(` + ops + `)\s*(` + cvRegex + `)\s*)((?:\s+|,\s*)(` + ops + `)\s*(` + cvRegex + `)\s*)*$`)
 
 const cvRegex string = `v?([0-9|x|X|\*]+)(\.[0-9|x|X|\*]+)?(\.[0-9|x|X|\*]+)?` +
 	`(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
@@ -256,7 +255,7 @@ type cfunc func(v *Version, c *constraint, includePre bool) (bool, error)
 
 func parseConstraint(c string) (*constraint, error) {
 	if len(c) > 0 {
-		m := constraintRegex.FindStringSubmatch(c)
+		m := constraintRegexOnce().FindStringSubmatch(c)
 		if m == nil {
 			return nil, fmt.Errorf("improper constraint: %q", c)
 		}
@@ -587,7 +586,7 @@ func isX(x string) bool {
 }
 
 func rewriteRange(i string) string {
-	m := constraintRangeRegex.FindAllStringSubmatch(i, -1)
+	m := constraintRangeRegexOnce().FindAllStringSubmatch(i, -1)
 	if m == nil {
 		return i
 	}
