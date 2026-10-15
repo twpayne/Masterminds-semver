@@ -189,62 +189,53 @@ func (cs Constraints) MarshalText() ([]byte, error) {
 	return []byte(cs.String()), nil
 }
 
-var constraintOps map[string]cfunc
-var constraintRegex *regexp.Regexp
-var constraintRangeRegex *regexp.Regexp
+var constraintOps = map[string]cfunc{
+	"":   constraintTildeOrEqual,
+	"=":  constraintTildeOrEqual,
+	"!=": constraintNotEqual,
+	">":  constraintGreaterThan,
+	"<":  constraintLessThan,
+	">=": constraintGreaterThanEqual,
+	"=>": constraintGreaterThanEqual,
+	"<=": constraintLessThanEqual,
+	"=<": constraintLessThanEqual,
+	"~":  constraintTilde,
+	"~>": constraintTilde,
+	"^":  constraintCaret,
+}
+
+const ops = `=||!=|>|<|>=|=>|<=|=<|~|~>|\^`
+
+var constraintRegex = regexp.MustCompile(fmt.Sprintf(
+	`^\s*(%s)\s*(%s)\s*$`,
+	ops,
+	cvRegex))
+
+var constraintRangeRegex = regexp.MustCompile(fmt.Sprintf(
+	`\s*(%s)\s+-\s+(%s)\s*`,
+	cvRegex, cvRegex))
 
 // Used to find individual constraints within a multi-constraint string
-var findConstraintRegex *regexp.Regexp
+var findConstraintRegex = regexp.MustCompile(fmt.Sprintf(
+	`(%s)\s*(%s)`,
+	ops,
+	cvRegex))
 
 // Used to validate an segment of ANDs is valid
-var validConstraintRegex *regexp.Regexp
+//
+// The first time a constraint shows up will look slightly different from
+// future times it shows up due to a leading space or comma in a given
+// string.
+var validConstraintRegex = regexp.MustCompile(fmt.Sprintf(
+	`^(\s*(%s)\s*(%s)\s*)((?:\s+|,\s*)(%s)\s*(%s)\s*)*$`,
+	ops,
+	cvRegex,
+	ops,
+	cvRegex))
 
 const cvRegex string = `v?([0-9|x|X|\*]+)(\.[0-9|x|X|\*]+)?(\.[0-9|x|X|\*]+)?` +
 	`(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
 	`(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?`
-
-func init() {
-	constraintOps = map[string]cfunc{
-		"":   constraintTildeOrEqual,
-		"=":  constraintTildeOrEqual,
-		"!=": constraintNotEqual,
-		">":  constraintGreaterThan,
-		"<":  constraintLessThan,
-		">=": constraintGreaterThanEqual,
-		"=>": constraintGreaterThanEqual,
-		"<=": constraintLessThanEqual,
-		"=<": constraintLessThanEqual,
-		"~":  constraintTilde,
-		"~>": constraintTilde,
-		"^":  constraintCaret,
-	}
-
-	ops := `=||!=|>|<|>=|=>|<=|=<|~|~>|\^`
-
-	constraintRegex = regexp.MustCompile(fmt.Sprintf(
-		`^\s*(%s)\s*(%s)\s*$`,
-		ops,
-		cvRegex))
-
-	constraintRangeRegex = regexp.MustCompile(fmt.Sprintf(
-		`\s*(%s)\s+-\s+(%s)\s*`,
-		cvRegex, cvRegex))
-
-	findConstraintRegex = regexp.MustCompile(fmt.Sprintf(
-		`(%s)\s*(%s)`,
-		ops,
-		cvRegex))
-
-	// The first time a constraint shows up will look slightly different from
-	// future times it shows up due to a leading space or comma in a given
-	// string.
-	validConstraintRegex = regexp.MustCompile(fmt.Sprintf(
-		`^(\s*(%s)\s*(%s)\s*)((?:\s+|,\s*)(%s)\s*(%s)\s*)*$`,
-		ops,
-		cvRegex,
-		ops,
-		cvRegex))
-}
 
 // An individual constraint
 type constraint struct {

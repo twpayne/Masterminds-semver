@@ -12,10 +12,8 @@ import (
 	"strings"
 )
 
-// The compiled version of the regex created at init() is cached here so it
-// only needs to be created once.
-var versionRegex *regexp.Regexp
-var looseVersionRegex *regexp.Regexp
+var versionRegex = regexp.MustCompile("^" + semVerRegex + "$")
+var looseVersionRegex = regexp.MustCompile("^" + looseSemVerRegex + "$")
 
 // CoerceNewVersion sets if leading 0's are allowd in the version part. Leading 0's are
 // not allowed in a valid semantic version. When set to true, NewVersion will coerce
@@ -84,11 +82,6 @@ type Version struct {
 	pre                 string
 	metadata            string
 	original            string
-}
-
-func init() {
-	versionRegex = regexp.MustCompile("^" + semVerRegex + "$")
-	looseVersionRegex = regexp.MustCompile("^" + looseSemVerRegex + "$")
 }
 
 const (
