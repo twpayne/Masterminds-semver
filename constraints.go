@@ -206,32 +206,19 @@ var constraintOps = map[string]cfunc{
 
 const ops = `=||!=|>|<|>=|=>|<=|=<|~|~>|\^`
 
-var constraintRegex = regexp.MustCompile(fmt.Sprintf(
-	`^\s*(%s)\s*(%s)\s*$`,
-	ops,
-	cvRegex))
+var constraintRegex = regexp.MustCompile(`^\s*(` + ops + `)\s*(` + cvRegex + `)\s*$`)
 
-var constraintRangeRegex = regexp.MustCompile(fmt.Sprintf(
-	`\s*(%s)\s+-\s+(%s)\s*`,
-	cvRegex, cvRegex))
+var constraintRangeRegex = regexp.MustCompile(`\s*(` + cvRegex + `)\s+-\s+(` + cvRegex + `)\s*`)
 
 // Used to find individual constraints within a multi-constraint string
-var findConstraintRegex = regexp.MustCompile(fmt.Sprintf(
-	`(%s)\s*(%s)`,
-	ops,
-	cvRegex))
+var findConstraintRegex = regexp.MustCompile(`(` + ops + `)\s*(` + cvRegex + `)`)
 
 // Used to validate an segment of ANDs is valid
 //
 // The first time a constraint shows up will look slightly different from
 // future times it shows up due to a leading space or comma in a given
 // string.
-var validConstraintRegex = regexp.MustCompile(fmt.Sprintf(
-	`^(\s*(%s)\s*(%s)\s*)((?:\s+|,\s*)(%s)\s*(%s)\s*)*$`,
-	ops,
-	cvRegex,
-	ops,
-	cvRegex))
+var validConstraintRegex = regexp.MustCompile(`^(\s*(` + ops + `)\s*(` + cvRegex + `)\s*)((?:\s+|,\s*)(` + ops + `)\s*(` + cvRegex + `)\s*)*$`)
 
 const cvRegex string = `v?([0-9|x|X|\*]+)(\.[0-9|x|X|\*]+)?(\.[0-9|x|X|\*]+)?` +
 	`(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?` +
@@ -284,16 +271,16 @@ func parseConstraint(c string) (*constraint, error) {
 		patchDirty := false
 		dirty := false
 		if isX(m[3]) || m[3] == "" {
-			ver = fmt.Sprintf("0.0.0%s", m[6])
+			ver = "0.0.0" + m[6]
 			dirty = true
 		} else if isX(strings.TrimPrefix(m[4], ".")) || m[4] == "" {
 			minorDirty = true
 			dirty = true
-			ver = fmt.Sprintf("%s.0.0%s", m[3], m[6])
+			ver = m[3] + ".0.0" + m[6]
 		} else if isX(strings.TrimPrefix(m[5], ".")) || m[5] == "" {
 			dirty = true
 			patchDirty = true
-			ver = fmt.Sprintf("%s%s.0%s", m[3], m[4], m[6])
+			ver = m[3] + m[4] + ".0" + m[6]
 		}
 
 		con, err := NewVersion(ver)
@@ -606,7 +593,7 @@ func rewriteRange(i string) string {
 	}
 	o := i
 	for _, v := range m {
-		t := fmt.Sprintf(">= %s, <= %s ", v[1], v[11])
+		t := ">= " + v[1] + ", <= " + v[11] + " "
 		o = strings.Replace(o, v[0], t, 1)
 	}
 
